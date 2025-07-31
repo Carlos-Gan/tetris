@@ -1,5 +1,5 @@
 name: Tetris
-description: "A new Flutter project."
+description: "A Tetris game, like all of the tetris games but in flutter."
 publish_to: 'none'
 version: 1.0.1
 
