@@ -22,3 +22,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/sounds/
+    - assets/img/logo.png
+  fonts:
+    - family: Bitcount
+      fonts:
+        - asset: assets/font/Bitcount-VF.ttf

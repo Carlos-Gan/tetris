@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:async';
 import 'dart:math';
 
@@ -67,6 +69,7 @@ class _GameBoardState extends State<GameBoard> {
 
   @override
   void dispose() {
+    gameTimer?.cancel();
     _bgPlayer.dispose();
     _sfxPlayer.dispose();
     super.dispose();
@@ -118,6 +121,10 @@ class _GameBoardState extends State<GameBoard> {
       if (isGameOver || isPaused) {
         timer.cancel();
         if (isGameOver) _onGameOver();
+        return;
+      }
+      if (!mounted) {
+        timer.cancel();
         return;
       }
       setState(() {
@@ -278,6 +285,7 @@ class _GameBoardState extends State<GameBoard> {
   }
 
   void _onGameOver() {
+    if (!mounted) return;
     if (!isMusicPaused) {
       _sfxPlayer.play(AssetSource('sounds/perder.mp3'));
     }
@@ -285,9 +293,35 @@ class _GameBoardState extends State<GameBoard> {
     _showGameOverDialog();
   }
 
-  void _showSettingsMenu() {
-    showModalBottomSheet(
+  void _pauseGameForSettings() {
+    if (!isPaused && !isGameOver) {
+      setState(() {
+        isPaused = true;
+      });
+      gameTimer?.cancel();
+      _bgPlayer.pause();
+    }
+  }
+
+  void _resumeGameAfterSettings() {
+    if (!isGameOver && isPaused) {
+      setState(() {
+        isPaused = false;
+      });
+      _bgPlayer.resume();
+      _startGameLoop();
+    }
+  }
+
+  void _showSettingsMenu() async {
+    bool pausedBySettings = false;
+    if (!isPaused && !isGameOver) {
+      _pauseGameForSettings();
+      pausedBySettings = true;
+    }
+    await showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.grey[800],
       builder: (BuildContext ctx) {
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -295,7 +329,10 @@ class _GameBoardState extends State<GameBoard> {
             SwitchListTile(
               value: isMusicPaused,
               secondary: Icon(Icons.music_note),
-              title: Text(isMusicPaused ? 'Reanudar música' : 'Pausar música'),
+              title: Text(
+                isMusicPaused ? 'Reanudar música' : 'Pausar música',
+                style: TextStyle(color: Colors.white),
+              ),
               onChanged: (val) async {
                 Navigator.of(ctx).pop();
                 setState(() {
@@ -311,15 +348,23 @@ class _GameBoardState extends State<GameBoard> {
             ),
             ListTile(
               leading: Icon(Icons.arrow_back),
-              title: Text('Regresar al menú'),
+              title: Text(
+                'Regresar al menú',
+                style: TextStyle(color: Colors.white),
+              ),
               onTap: () {
                 Navigator.of(ctx).pop();
+                Navigator.of(context).pushReplacementNamed('/');
               },
             ),
           ],
         );
       },
-    );
+    ).whenComplete(() {
+      if (pausedBySettings) {
+        _resumeGameAfterSettings();
+      }
+    });
   }
 
   void _showGameOverDialog() {
@@ -328,15 +373,24 @@ class _GameBoardState extends State<GameBoard> {
       builder:
           (context) => AlertDialog(
             backgroundColor: Colors.grey[800],
-            title: const Text('Game Over'),
-            content: Text('Your score: $currentScore'),
+            title: const Text(
+              'Game Over',
+              style: TextStyle(color: Colors.white),
+            ),
+            content: Text(
+              'Your score: $currentScore',
+              style: TextStyle(color: Colors.white),
+            ),
             actions: [
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                   _startNewGame();
                 },
-                child: const Text('Restart'),
+                child: const Text(
+                  'Restart',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ],
           ),
@@ -351,10 +405,7 @@ class _GameBoardState extends State<GameBoard> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 30.0,
-            ),
+            padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 40.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -369,13 +420,12 @@ class _GameBoardState extends State<GameBoard> {
                 Column(
                   children: [
                     Text(
-                      'Score: $currentScore',
-                      style: TextStyle(color: Colors.white, fontSize: 18),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
                       'High Score: $maxScore',
-                      style: TextStyle(color: Colors.white, fontSize: 18),
+                      style: TextStyle(color: Colors.white, fontSize: 15),
+                    ),
+                    Text(
+                      'Score: $currentScore',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ],
                 ),
@@ -411,7 +461,7 @@ class _GameBoardState extends State<GameBoard> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(top: 50.0, bottom: 100.0),
+            padding: const EdgeInsets.only(top: 20.0, bottom: 90.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
