@@ -27,3 +27,6 @@ flutter:
     - family: Bitcount
       fonts:
         - asset: assets/font/Bitcount-VF.ttf
+flutter_icons:
+  android: true
+  image_path: assets/img/logo.png
